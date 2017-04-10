@@ -1,0 +1,32 @@
+#!/usr/bin/expect
+
+proc help {} {
+  global argv0
+  global actionnames
+  send_user "usage: $argv0 outlet {on|off|boot}\n"
+  exit 1
+}
+
+proc waitprompt {} {
+  expect {
+    "RPB+> " { }
+    timeout {
+      send_user " ===> TIMEOUT <===\n"
+      exit 1
+    }
+  } 
+}
+
+spawn /home/pi/sc/bin/serial.wrap [ exec readlink -f /dev/serial/by-path/platform-20980000.usb-usb-0:1.2:1.0-port0 ]
+set timeout 70
+send "\n"
+waitprompt
+
+if {$argc == 2} {
+  set outlet [lindex $argv 0]
+  set cmd [string toupper [lindex $argv 1]]
+
+  send "/$outlet $cmd\n"
+  set timeout 30
+  waitprompt
+}

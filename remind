@@ -1,0 +1,12 @@
+SET $LongDeg 76
+SET $LongMin 36
+SET $LongSec 33
+SET $LatDeg 39
+SET $LatMin 17
+SET $LatSec 33
+
+REM AT [sunrise()] MSG Lights on...
+REM AT [sunrise()] RUN /home/pi/sc/bin/rpb.expect 1 on > /dev/null
+
+REM AT [sunset()]  MSG Lights off...
+REM AT [sunset()]  RUN /home/pi/sc/bin/rpb.expect 1 off > /dev/null

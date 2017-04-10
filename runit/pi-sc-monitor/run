@@ -1,0 +1,2 @@
+#!/bin/sh
+exec chpst -u pi:pi:dialout python -u /home/pi/sc/bin/monitor.py

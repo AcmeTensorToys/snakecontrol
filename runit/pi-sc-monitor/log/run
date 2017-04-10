@@ -1,0 +1,2 @@
+#!/bin/sh
+exec chpst -u pi svlogd -tt /home/pi/sc/data/monitor.log

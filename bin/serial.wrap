@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -e -u
+
+stty -F $1 sane -echo clocal crtscts hupcl -icanon icrnl inlcr 9600
+stty -F $1 0 2>/dev/null || true
+stty -F $1 sane -echo clocal crtscts hupcl -icanon icrnl inlcr 9600
+exec flock -e -w 60 /var/lock/LCK..`basename $1` socat $1 STDIO
