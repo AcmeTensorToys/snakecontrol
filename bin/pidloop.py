@@ -45,7 +45,7 @@ class PIDLoop(object):
 
     def _value (self, error, edeltasmooth) :
 
-        print ("PID LOOP CONTRIBUTIONS: p=%r d=%r i=%r" % (self.kP * error, self.kD * edeltasmooth, self.kI * self.sum_error))
+        # print ("PID LOOP CONTRIBUTIONS: p=%r d=%r i=%r" % (self.kP * error, self.kD * edeltasmooth, self.kI * self.sum_error))
 
         return (self.kP * error) + (self.kD * edeltasmooth) + (self.kI * self.sum_error)
 
@@ -78,7 +78,7 @@ class PIDLoop(object):
         elif self.hard_min is not None and ov <= self.hard_min and sum_error_delta < 0:
             # Do not decrement error; we're already slammed up against the hard limit
             pass
-        else if sum_error_delta != 0:
+        elif sum_error_delta != 0:
             # Update sum_error and recompute the output value
             self.sum_error += sum_error_delta
             ov = self._value(error, edeltasmooth)

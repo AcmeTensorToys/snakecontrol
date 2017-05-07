@@ -1,2 +1,4 @@
 #!/bin/sh
-exec chpst -u pi svlogd -tt /home/pi/sc/data/monitor.log
+mkdir -p /run/snakecontrol/monitor.log
+chown -R pi:pi /run/snakecontrol
+exec chpst -u pi svlogd -tt /run/snakecontrol/monitor.log

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec chpst -u pi:pi expect /home/pi/sc/bin/lcdproc.expect >/dev/null

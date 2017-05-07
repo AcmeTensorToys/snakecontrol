@@ -1,0 +1,117 @@
+#!/usr/bin/expect
+
+proc lcdcmd {sid cmd} {
+  send -i ${sid} "${cmd}\n"
+  while { true } {
+    expect {
+      -i ${sid} -re "^[lindex [split "${cmd}"] 0]\[^\n\]*\r\n" {
+         while { true } {
+           expect {
+             -i ${sid} -re "^success\[^\n\]*\n" { return }
+             -i ${sid} -re "^\r\n" { }
+             -i ${sid} -re "^listen .*\n" {}
+             -i ${sid} -re "^ignore .*\n" {}
+             timeout { error "LCD protocol failure while waiting for success?" } 
+           }
+         }
+       }
+      -i ${sid} -re "^listen .*\n" {}
+      -i ${sid} -re "^ignore .*\n" {}
+      timeout { error "LCD protocol failure while waiting for echo?" } 
+    }
+  }
+}
+
+proc spawnlcd {host port} {
+  spawn socat STDIO "TCP:${host}:${port}"
+  send -i ${spawn_id} "hello\n"
+  expect {
+    -i ${spawn_id} -re "^hello\r\nconnect .*\r\n" { return ${spawn_id} }
+    timeout { error "LCD protocol failure while sending hello?" } 
+  }
+}
+
+spawn tail --retry --follow=name /run/snakecontrol/monitor.log/current
+set logsid ${spawn_id}
+
+set sid [spawnlcd "localhost" "13666"]
+lcdcmd ${sid} "client_set -name test"
+
+lcdcmd ${sid} "screen_add 1"
+lcdcmd ${sid} "screen_set 1 -name Vivarium"
+lcdcmd ${sid} "screen_set 1 -priority hidden"
+lcdcmd ${sid} "screen_set 1 -cursor off"
+
+lcdcmd ${sid} "widget_add 1 ti title"
+lcdcmd ${sid} "widget_set 1 ti Vivarium"
+
+lcdcmd ${sid} "widget_add 1 i_up icon"
+lcdcmd ${sid} "widget_set 1 i_up 1 2 ARROW_UP"
+lcdcmd ${sid} "widget_add 1 i_th string"
+lcdcmd ${sid} "widget_set 1 i_th 2 2 T"
+lcdcmd ${sid} "widget_add 1 v_ut string"
+lcdcmd ${sid} "widget_add 1 i_uh string"
+lcdcmd ${sid} "widget_set 1 i_uh 8 2 H"
+lcdcmd ${sid} "widget_add 1 v_uh string"
+
+lcdcmd ${sid} "widget_add 1 i_l icon"
+lcdcmd ${sid} "widget_set 1 i_l 1 3 ARROW_LEFT"
+
+lcdcmd ${sid} "widget_add 1 i_r icon"
+lcdcmd ${sid} "widget_set 1 i_r 1 4 ARROW_RIGHT"
+
+lcdcmd ${sid} "widget_add 1 i_lh icon"
+lcdcmd ${sid} "widget_set 1 i_lh 2 3 ARROW_DOWN"
+lcdcmd ${sid} "widget_add 1 v_lh string"
+
+lcdcmd ${sid} "widget_add 1 i_rh icon"
+lcdcmd ${sid} "widget_set 1 i_rh 2 4 ARROW_DOWN"
+lcdcmd ${sid} "widget_add 1 v_rh string"
+
+lcdcmd ${sid} "widget_add 1 i_lt icon"
+lcdcmd ${sid} "widget_set 1 i_lt 9 3 ARROW_UP"
+lcdcmd ${sid} "widget_add 1 v_lt string"
+
+lcdcmd ${sid} "widget_add 1 i_rt icon"
+lcdcmd ${sid} "widget_set 1 i_rt 9 4 ARROW_UP"
+lcdcmd ${sid} "widget_add 1 v_rt string"
+
+lcdcmd ${sid} "widget_add 1 v_ldmxl string"
+lcdcmd ${sid} "widget_set 1 v_ldmxl 17 3 @"
+lcdcmd ${sid} "widget_add 1 v_ldmx string"
+ 
+lcdcmd ${sid} "widget_add 1 v_rdmxl string"
+lcdcmd ${sid} "widget_set 1 v_rdmxl 17 4 @"
+lcdcmd ${sid} "widget_add 1 v_rdmx string"
+
+lcdcmd ${sid} "screen_set 1 -priority info"
+
+proc drawtemp { scr wid x y } {
+  global sid
+  global expect_out
+  set t [expr round(${expect_out(1,string)}*10.0)/10.0]
+  lcdcmd ${sid} "widget_set ${scr} ${wid} ${x} ${y} ${t}"
+}
+
+set datapfx "^\[^ \]* DATA: "
+set datare "(\[^ \r\n]*)"
+
+while { true } {
+  expect {
+    -i ${logsid} -re "${datapfx}hide-near.* temp=${datare}.*\n"  { drawtemp 1 "v_lh" 4  3 }
+    -i ${logsid} -re "${datapfx}hide-far.* temp=${datare}.*\n"   { drawtemp 1 "v_rh" 4  4 }
+    -i ${logsid} -re "${datapfx}tank-near.* temp=${datare}.*\n"  { drawtemp 1 "v_lt" 11 3 }
+    -i ${logsid} -re "${datapfx}tank-far.* temp=${datare}.*\n"   { drawtemp 1 "v_rt" 11 4 }
+    -i ${logsid} -re "${datapfx}tank-top.* temp=${datare}.*\n"   { drawtemp 1 "v_ut" 3  2 }
+    -i ${logsid} -re "${datapfx}tank-top.* humid=${datare}.*\n"  { drawtemp 1 "v_uh" 9  2 }
+    -i ${logsid} -re "${datapfx}dmx-near.* dmx=${datare}.*\n" {
+      lcdcmd ${sid} "widget_set 1 v_ldmx 18 3 ${expect_out(1,string)}"
+    }
+    -i ${logsid} -re "${datapfx}dmx-mid.* dmx=${datare}.*\n" {
+      lcdcmd ${sid} "widget_set 1 v_rdmx 18 4 ${expect_out(1,string)}"
+    }
+    -i ${logsid} -re "\n" {}
+    -i ${sid} -re "^listen .*\n" {}
+    -i ${sid} -re "^ignore .*\n" {}
+  }
+}

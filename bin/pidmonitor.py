@@ -6,8 +6,10 @@ import os
 import sched
 import time
 import serial
-import pidloop
 import rrdtool
+
+import pidloop
+import BME280
 
 dmxdev = serial.Serial("/dev/serial/by-id/usb-DMXking.com_DMX_USB_PRO_6A0SVM7J-if00-port0", 57600);
 
@@ -18,24 +20,70 @@ loop_hidenear.setHardMin(-128)
 loop_hidenear.setKP(60.0)
 loop_hidenear.setKI(0.004)
 loop_hidenear.setKD(1000.0,0.95) 
-loop_hidenear.sum_error = -3000.0 # XXX Initialize offset point a bit
+loop_hidenear.sum_error = -7600.0 # XXX Initialize offset point a bit
 
-def with_ow_temp_fk_id(devfn, loop, s, *arg, **kwarg):
+bmetop = BME280.BME280(port=1, address=0x77)
+
+def with_ow_temp_fk_id2(devfn, loop, s, *arg, **kwarg):
     print("WARNING: failed to read %s" % devfn)
     return s # an ugly default
 
-def with_ow_temp(devfn, sk, fk, *arg, **kwarg):
+def with_ow_temp(cache, devfn, sk, fk, *arg, **kwarg):
+    if devfn in cache :
+        return sk(devfn, cache[devfn], *arg, **kwarg)
     with open(devfn) as devf:
         devstr = devf.read()
         devlines = devstr.split("\n")
         if devlines[0].find("YES") > 0:
-            return sk(devfn,float((devlines[1].split(" ")[9])[2:]) / 1000, *arg, **kwarg)
+            val = float((devlines[1].split(" ")[9])[2:]) / 1000
+            cache[devfn] = val
+            return sk(devfn, val, *arg, **kwarg)
     return fk(devfn, *arg, **kwarg)
 
 def check_temps(sc):
     sc.enter(10, 1, check_temps, (sc,))
 
-    def check(devfn, temp, loop, s, offset, rrd):
+    cache = {}
+
+    def log(devfn, temp, logname, rrd, kw="temp"):
+        rrdtool.update(rrd, "N:" + ("%f" % temp))
+        print ("DATA: %s %s=%s" % (logname, kw, temp))
+
+    def logfail(devfn, name, *arg):
+        print ("FAIL: %s %s %s" % (name, devfn, arg))
+
+    # BME280 atop
+    try:
+      top = bmetop.get_data()
+      log("bme280-77", top['t'], "tank-top", "/home/pi/sc/data/tank-top-temp.rrd")
+      log("bme280-77", top['h'], "tank-top", "/home/pi/sc/data/tank-top-humid.rrd", kw="humid")
+      log("bme280-77", top['p'], "tank-top", "/home/pi/sc/data/tank-top-press.rrd", kw="press")
+    except Exception, e:
+      logfail("bme280-77", "hide-top")
+
+    # Log (and populate cache, while we're at it)
+    with_ow_temp(cache,
+                 "/sys/bus/w1/devices/28-011620f10dee/w1_slave", log, logfail,
+                 "hide-near", "/home/pi/sc/data/hide-near-temp.rrd")
+
+    with_ow_temp(cache,
+                 "/sys/bus/w1/devices/28-011620c718ee/w1_slave", log, logfail,
+                 "hide-far", "/home/pi/sc/data/hide-far-temp.rrd")
+
+    with_ow_temp(cache,
+                 "/sys/bus/w1/devices/28-02161e26acee/w1_slave", log, logfail,
+                 "tank-far", "/home/pi/sc/data/tank-far-temp.rrd")
+
+    with_ow_temp(cache,
+                 "/sys/bus/w1/devices/28-03164712aaff/w1_slave", log, logfail,
+                 "heater-near", "/home/pi/sc/data/heater-temp.rrd")
+
+    with_ow_temp(cache,
+                 "/sys/bus/w1/devices/28-0416526de6ff/w1_slave", log, logfail,
+                 "tank-near", "/home/pi/sc/data/tank-near-temp.rrd")
+
+
+    def checkpid(devfn, temp, loop, s, offset, rrd, logname):
         desire = 128.0 + loop.update(temp, time.time())
 
         if desire < 0 :
@@ -46,8 +94,10 @@ def check_temps(sc):
             loop.output = 255
 
         rrdtool.update(rrd, "N:" + ("%f" % desire))
+        dmx = int(desire+0.5)
+        print("DATA: %s dmx=%s" % (logname, dmx))
 
-        return s[:offset] + chr(int(desire+0.5)) + s[offset+1:]
+        return s[:offset] + chr(dmx) + s[offset+1:]
 
     # DMX conttrol string; initialize to all channels full off
     # 7E -- header
@@ -60,8 +110,10 @@ def check_temps(sc):
     s = "\x7E\x06\x03\x00\x00\x00\x00\xE7"
 
     # Drive loop
-    s = with_ow_temp("/sys/bus/w1/devices/28-011620f10dee/w1_slave",
-            check, with_ow_temp_fk_id, loop_hidenear, s, 5, "/home/pi/sc/data/hide-near-dmx.rrd")
+    s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620f10dee/w1_slave",
+            checkpid, with_ow_temp_fk_id2, loop_hidenear, s, 5, "/home/pi/sc/data/hide-near-dmx.rrd", "dmx-near")
+
+    # Log some other probes
 
     print ("check temps fini: out=%r lhn=(%s)" % (s, loop_hidenear))
     assert(dmxdev.write(s) == 8)
