@@ -1,0 +1,55 @@
+#!/usr/bin/expect
+
+package require lcdproclib
+
+set lcdsid [::lcdproclib::spawnlcd "localhost" "13666"]
+::lcdproclib::cmd ${lcdsid} "client_set -name remind"
+
+::lcdproclib::cmd ${lcdsid} "screen_add 1"
+::lcdproclib::cmd ${lcdsid} "screen_set 1 -name Reminders"
+::lcdproclib::cmd ${lcdsid} "screen_set 1 -priority hidden"
+::lcdproclib::cmd ${lcdsid} "screen_set 1 -cursor off"
+
+::lcdproclib::cmd ${lcdsid} "widget_add 1 ti title"
+::lcdproclib::cmd ${lcdsid} "widget_set 1 ti Reminders"
+
+::lcdproclib::cmd ${lcdsid} "widget_add 1 v1 string"
+
+::lcdproclib::cmd ${lcdsid} "screen_set 1 -priority info"
+
+
+proc reload {lcdsid filename} {
+  try {
+    set fp [open ${filename} r]
+  } trap {POSIX ENOENT} {} {
+    puts "ENOENT"
+    sleep 1
+    return
+  }
+
+  ::lcdproclib::cmd ${lcdsid} "widget_set 1 ti {[gets $fp]}"
+  ::lcdproclib::cmd ${lcdsid} "widget_set 1 v1 1 2 {[gets $fp]}"
+
+  close ${fp}
+}
+
+proc spawninotify {filename} {
+  spawn inotifywait -m -e CLOSE_WRITE,DELETE_SELF ${filename} 
+  return ${spawn_id}
+}
+
+set filename "/run/snakecontrol/remind.out"
+
+set waitsid [spawninotify ${filename}]
+
+while { true } {
+  expect {
+    -i ${waitsid} -re "(CLOSE|DELETE)" {
+      close ${waitsid}
+      set waitsid [spawninotify ${filename}]
+    }
+    -i ${waitsid} "Watches established." { reload ${lcdsid} ${filename} }
+    -i ${lcdsid} -re "^listen .*\n" {}
+    -i ${lcdsid} -re "^ignore .*\n" {}
+  }
+}

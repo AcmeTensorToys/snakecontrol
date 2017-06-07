@@ -45,17 +45,17 @@ rrdtool create /home/pi/sc/data/tank-top-humid.rrd \
    --no-overwrite \
    --step 60 \
    DS:humid:GAUGE:900:-5:105 \
-   RRA:AVERAGE:0.5:6:525600 \
-   RRA:AVERAGE:0.25:360:87600 \
-   RRA:MIN:0.025:360:87600 \
-   RRA:MAX:0.025:360:87600
+   RRA:AVERAGE:0.5:1:525600 \
+   RRA:AVERAGE:0.25:60:87600 \
+   RRA:MIN:0.025:60:87600 \
+   RRA:MAX:0.025:60:87600
 
 
 rrdtool create /home/pi/sc/data/tank-top-press.rrd \
    --no-overwrite \
    --step 60 \
    DS:press:GAUGE:900:-1000:120000 \
-   RRA:AVERAGE:0.5:6:525600 \
-   RRA:AVERAGE:0.25:360:87600 \
-   RRA:MIN:0.025:360:87600 \
-   RRA:MAX:0.025:360:87600
+   RRA:AVERAGE:0.5:1:525600 \
+   RRA:AVERAGE:0.25:60:87600 \
+   RRA:MIN:0.025:60:87600 \
+   RRA:MAX:0.025:60:87600

@@ -1,0 +1,1 @@
+* */4 * * * remind -r /home/pi/sc/data/care.rem | grep -v '^$' > /run/snakecontrol/remind.out

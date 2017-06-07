@@ -1,0 +1,88 @@
+#!/usr/bin/expect
+
+package require lcdproclib
+
+spawn tail --retry --follow=name /run/snakecontrol/monitor.log/current
+set logsid ${spawn_id}
+
+set sid [::lcdproclib::spawnlcd "localhost" "13666"]
+::lcdproclib::cmd ${sid} "client_set -name viv"
+
+::lcdproclib::cmd ${sid} "screen_add 1"
+::lcdproclib::cmd ${sid} "screen_set 1 -name Vivarium"
+::lcdproclib::cmd ${sid} "screen_set 1 -priority hidden"
+::lcdproclib::cmd ${sid} "screen_set 1 -cursor off"
+
+::lcdproclib::cmd ${sid} "widget_add 1 ti title"
+::lcdproclib::cmd ${sid} "widget_set 1 ti Vivarium"
+
+::lcdproclib::cmd ${sid} "widget_add 1 i_up icon"
+::lcdproclib::cmd ${sid} "widget_set 1 i_up 1 2 ARROW_UP"
+::lcdproclib::cmd ${sid} "widget_add 1 i_th string"
+::lcdproclib::cmd ${sid} "widget_set 1 i_th 2 2 T"
+::lcdproclib::cmd ${sid} "widget_add 1 v_ut string"
+::lcdproclib::cmd ${sid} "widget_add 1 i_uh string"
+::lcdproclib::cmd ${sid} "widget_set 1 i_uh 8 2 H"
+::lcdproclib::cmd ${sid} "widget_add 1 v_uh string"
+
+::lcdproclib::cmd ${sid} "widget_add 1 i_l icon"
+::lcdproclib::cmd ${sid} "widget_set 1 i_l 1 3 ARROW_LEFT"
+
+::lcdproclib::cmd ${sid} "widget_add 1 i_r icon"
+::lcdproclib::cmd ${sid} "widget_set 1 i_r 1 4 ARROW_RIGHT"
+
+::lcdproclib::cmd ${sid} "widget_add 1 i_lh icon"
+::lcdproclib::cmd ${sid} "widget_set 1 i_lh 2 3 ARROW_DOWN"
+::lcdproclib::cmd ${sid} "widget_add 1 v_lh string"
+
+::lcdproclib::cmd ${sid} "widget_add 1 i_rh icon"
+::lcdproclib::cmd ${sid} "widget_set 1 i_rh 2 4 ARROW_DOWN"
+::lcdproclib::cmd ${sid} "widget_add 1 v_rh string"
+
+::lcdproclib::cmd ${sid} "widget_add 1 i_lt icon"
+::lcdproclib::cmd ${sid} "widget_set 1 i_lt 9 3 ARROW_UP"
+::lcdproclib::cmd ${sid} "widget_add 1 v_lt string"
+
+::lcdproclib::cmd ${sid} "widget_add 1 i_rt icon"
+::lcdproclib::cmd ${sid} "widget_set 1 i_rt 9 4 ARROW_UP"
+::lcdproclib::cmd ${sid} "widget_add 1 v_rt string"
+
+::lcdproclib::cmd ${sid} "widget_add 1 v_ldmxl string"
+::lcdproclib::cmd ${sid} "widget_set 1 v_ldmxl 17 3 @"
+::lcdproclib::cmd ${sid} "widget_add 1 v_ldmx string"
+ 
+::lcdproclib::cmd ${sid} "widget_add 1 v_rdmxl string"
+::lcdproclib::cmd ${sid} "widget_set 1 v_rdmxl 17 4 @"
+::lcdproclib::cmd ${sid} "widget_add 1 v_rdmx string"
+
+::lcdproclib::cmd ${sid} "screen_set 1 -priority info"
+
+proc drawtemp { scr wid x y } {
+  global sid
+  global expect_out
+  set t [expr round(${expect_out(1,string)}*10.0)/10.0]
+  ::lcdproclib::cmd ${sid} "widget_set ${scr} ${wid} ${x} ${y} ${t}"
+}
+
+set datapfx "^\[^ \]* DATA: "
+set datare "(\[^ \r\n]*)"
+
+while { true } {
+  expect {
+    -i ${logsid} -re "${datapfx}hide-near.* temp=${datare}.*\n"  { drawtemp 1 "v_lh" 4  3 }
+    -i ${logsid} -re "${datapfx}hide-far.* temp=${datare}.*\n"   { drawtemp 1 "v_rh" 4  4 }
+    -i ${logsid} -re "${datapfx}tank-near.* temp=${datare}.*\n"  { drawtemp 1 "v_lt" 11 3 }
+    -i ${logsid} -re "${datapfx}tank-far.* temp=${datare}.*\n"   { drawtemp 1 "v_rt" 11 4 }
+    -i ${logsid} -re "${datapfx}tank-top.* temp=${datare}.*\n"   { drawtemp 1 "v_ut" 3  2 }
+    -i ${logsid} -re "${datapfx}tank-top.* humid=${datare}.*\n"  { drawtemp 1 "v_uh" 9  2 }
+    -i ${logsid} -re "${datapfx}dmx-near.* dmx=${datare}.*\n" {
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldmx 18 3 ${expect_out(1,string)}"
+    }
+    -i ${logsid} -re "${datapfx}dmx-mid.* dmx=${datare}.*\n" {
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_rdmx 18 4 ${expect_out(1,string)}"
+    }
+    -i ${logsid} -re "\n" {}
+    -i ${sid} -re "^listen .*\n" {}
+    -i ${sid} -re "^ignore .*\n" {}
+  }
+}

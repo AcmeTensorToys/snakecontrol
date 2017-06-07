@@ -1,2 +1,3 @@
 #!/bin/sh
-exec chpst -u pi:pi expect /home/pi/sc/bin/lcdproc.expect >/dev/null
+export TCLLIBPATH="$TCLLIBPATH /home/pi/sc/bin"
+exec chpst -u pi:pi expect /home/pi/sc/bin/lcdproc-monitor.expect >/dev/null
