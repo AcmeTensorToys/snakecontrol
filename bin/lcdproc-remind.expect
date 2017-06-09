@@ -34,7 +34,7 @@ proc reload {lcdsid filename} {
 }
 
 proc spawninotify {filename} {
-  spawn inotifywait -m -e CLOSE_WRITE,DELETE_SELF ${filename} 
+  spawn inotifywait -e CLOSE_WRITE,DELETE_SELF ${filename}
   return ${spawn_id}
 }
 
