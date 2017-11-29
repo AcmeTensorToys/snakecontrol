@@ -22,7 +22,7 @@ loop_hidenear.setKI(0.004)
 loop_hidenear.setKD(1000.0,0.95) 
 loop_hidenear.sum_error = -7600.0 # XXX Initialize offset point a bit
 
-bmetop = BME280.BME280(port=1, address=0x77)
+bmemid = BME280.BME280(port=1, address=0x77)
 
 def with_ow_temp_fk_id2(devfn, loop, s, *arg, **kwarg):
     print("WARNING: failed to read %s" % devfn)
@@ -54,12 +54,12 @@ def check_temps(sc):
 
     # BME280 atop
     try:
-      top = bmetop.get_data()
-      log("bme280-77", top['t'], "tank-top", "/home/pi/sc/data/tank-top-temp.rrd")
-      log("bme280-77", top['h'], "tank-top", "/home/pi/sc/data/tank-top-humid.rrd", kw="humid")
-      log("bme280-77", top['p'], "tank-top", "/home/pi/sc/data/tank-top-press.rrd", kw="press")
+      top = bmemid.get_data()
+      log("bme280-77", top['t'], "tank-mid", "/home/pi/sc/data/tank-mid-temp.rrd")
+      log("bme280-77", top['h'], "tank-mid", "/home/pi/sc/data/tank-mid-humid.rrd", kw="humid")
+      log("bme280-77", top['p'], "tank-mid", "/home/pi/sc/data/tank-mid-press.rrd", kw="press")
     except Exception, e:
-      logfail("bme280-77", "hide-top")
+      logfail("bme280-77", "hide-mid", e)
 
     # Log (and populate cache, while we're at it)
     with_ow_temp(cache,
@@ -79,8 +79,12 @@ def check_temps(sc):
                  "heater-near", "/home/pi/sc/data/heater-temp.rrd")
 
     with_ow_temp(cache,
-                 "/sys/bus/w1/devices/28-0416526de6ff/w1_slave", log, logfail,
+                 "/sys/bus/w1/devices/28-011620c805ee/w1_slave", log, logfail,
                  "tank-near", "/home/pi/sc/data/tank-near-temp.rrd")
+
+    with_ow_temp(cache,
+                 "/sys/bus/w1/devices/28-0416526de6ff/w1_slave", log, logfail,
+                "tank-top", "/home/pi/sc/data/tank-top-temp.rrd")
 
 
     def checkpid(devfn, temp, loop, s, offset, rrd, logname):
@@ -105,9 +109,12 @@ def check_temps(sc):
     # 03 00 -- payload length
     # 00 -- channel 0 value (ignored by hardware)
     # 00 -- channel 1 value
-    # 00 -- channel 2 value
+    # nn -- channel 2 value
+    # nn -- channel 3 value
+    # nn -- channel 4 value
     # E7 -- footer
-    s = "\x7E\x06\x03\x00\x00\x00\x00\xE7"
+    #    |hdr|typ|pay len|  0|  1|  2|  3|  4|ftr
+    s = "\x7E\x06\x05\x00\x00\x00\x90\x00\x00\xE7"
 
     # Drive loop
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620f10dee/w1_slave",
@@ -116,7 +123,7 @@ def check_temps(sc):
     # Log some other probes
 
     print ("check temps fini: out=%r lhn=(%s)" % (s, loop_hidenear))
-    assert(dmxdev.write(s) == 8)
+    assert(dmxdev.write(s) == len(s))
 
 itime = time.time()
 s = sched.scheduler(time.time, time.sleep)

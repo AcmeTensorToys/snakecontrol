@@ -7,6 +7,7 @@ RRDS=(
  tank-near-temp
  tank-far-temp
  tank-top-temp
+ tank-mid-temp
 )
 
 ARGS=(
@@ -41,7 +42,7 @@ for rrd in ${=RRDS[@]}; do
   rrdtool create /home/pi/sc/data/${rrd}.rrd ${=ARGS[@]}
 done
 
-rrdtool create /home/pi/sc/data/tank-top-humid.rrd \
+rrdtool create /home/pi/sc/data/tank-mid-humid.rrd \
    --no-overwrite \
    --step 60 \
    DS:humid:GAUGE:900:-5:105 \
@@ -51,7 +52,7 @@ rrdtool create /home/pi/sc/data/tank-top-humid.rrd \
    RRA:MAX:0.025:60:87600
 
 
-rrdtool create /home/pi/sc/data/tank-top-press.rrd \
+rrdtool create /home/pi/sc/data/tank-mid-press.rrd \
    --no-overwrite \
    --step 60 \
    DS:press:GAUGE:900:-1000:120000 \
