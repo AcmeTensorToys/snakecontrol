@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 DATA_DIR=/home/pi/sc/data
-OUTDIR=/home/pi/public_html
+OUTDIR=/home/pi/public_html/genimg
 
 DMX_SCALE=5
 DMX_SHIFT=20
@@ -9,9 +9,10 @@ DMX_SHIFT=20
 TEMP_SCALE_UPPER=32
 TEMP_SCALE_LOWER=19
 
+# In index.html, add 97 to width and 73 to height.
 COMMON_ARGS=(
 	--end now
-        --width=960 --height=480
+        --width=512 --height=320
         --lazy
 )
 
@@ -89,7 +90,7 @@ touch ${OUTDIR}/.rrdlock
 flock --exclusive ${OUTDIR}/.rrdlock "${CMD[@]}" >&2
 
 cat <<HERE
-Location: /~pi/${OUTFILE}
+Location: /~pi/genimg/${OUTFILE}
 
 HERE
 
