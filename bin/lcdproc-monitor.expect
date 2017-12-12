@@ -5,6 +5,9 @@ package require lcdproclib
 spawn tail --retry --follow=name /run/snakecontrol/monitor.log/current
 set logsid ${spawn_id}
 
+spawn tail --retry --follow=name /run/snakecontrol/door-monitor.log/current
+set doorlogsid ${spawn_id}
+
 set sid [::lcdproclib::spawnlcd "localhost" "13666"]
 ::lcdproclib::cmd ${sid} "client_set -name viv"
 
@@ -40,20 +43,27 @@ set sid [::lcdproclib::spawnlcd "localhost" "13666"]
 ::lcdproclib::cmd ${sid} "widget_add 1 v_rh string"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_lt icon"
-::lcdproclib::cmd ${sid} "widget_set 1 i_lt 9 3 ARROW_UP"
+::lcdproclib::cmd ${sid} "widget_set 1 i_lt 8 3 ARROW_UP"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_lt string"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_rt icon"
-::lcdproclib::cmd ${sid} "widget_set 1 i_rt 9 4 ARROW_UP"
+::lcdproclib::cmd ${sid} "widget_set 1 i_rt 8 4 ARROW_UP"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_rt string"
 
+::lcdproclib::cmd ${sid} "widget_add 1 v_mdmxl string"
+::lcdproclib::cmd ${sid} "widget_set 1 v_mdmxl 14 3 @"
+::lcdproclib::cmd ${sid} "widget_add 1 v_mdmx string"
+
 ::lcdproclib::cmd ${sid} "widget_add 1 v_ldmxl string"
-::lcdproclib::cmd ${sid} "widget_set 1 v_ldmxl 17 3 @"
+::lcdproclib::cmd ${sid} "widget_set 1 v_ldmxl 14 3 @"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_ldmx string"
  
 ::lcdproclib::cmd ${sid} "widget_add 1 v_rdmxl string"
-::lcdproclib::cmd ${sid} "widget_set 1 v_rdmxl 17 4 @"
+::lcdproclib::cmd ${sid} "widget_set 1 v_rdmxl 14 4 @"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_rdmx string"
+
+::lcdproclib::cmd ${sid} "widget_add 1 v_ldoor string"
+::lcdproclib::cmd ${sid} "widget_add 1 v_rdoor string"
 
 ::lcdproclib::cmd ${sid} "screen_set 1 -priority info"
 
@@ -66,23 +76,36 @@ proc drawtemp { scr wid x y } {
 
 set datapfx "^\[^ \]* DATA: "
 set datare "(\[^ \r\n]*)"
+set dskip "\[^\n\]*"
 
 while { true } {
   expect {
-    -i ${logsid} -re "${datapfx}hide-near.* temp=${datare}.*\n"  { drawtemp 1 "v_lh" 4  3 }
-    -i ${logsid} -re "${datapfx}hide-far.* temp=${datare}.*\n"   { drawtemp 1 "v_rh" 4  4 }
-    -i ${logsid} -re "${datapfx}tank-near.* temp=${datare}.*\n"  { drawtemp 1 "v_lt" 11 3 }
-    -i ${logsid} -re "${datapfx}tank-far.* temp=${datare}.*\n"   { drawtemp 1 "v_rt" 11 4 }
-    -i ${logsid} -re "${datapfx}tank-mid.* temp=${datare}.*\n"   { drawtemp 1 "v_mt" 3  2 }
-    -i ${logsid} -re "${datapfx}tank-mid.* humid=${datare}.*\n"  { drawtemp 1 "v_mh" 9  2 }
-    -i ${logsid} -re "${datapfx}dmx-near.* dmx=${datare}.*\n" {
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldmx 18 3 ${expect_out(1,string)}"
+    -i ${logsid} -re "${datapfx}hide-near${dskip} temp=${datare}${dskip}\n"  { drawtemp 1 "v_lh" 3  3 }
+    -i ${logsid} -re "${datapfx}hide-far${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_rh" 3  4 }
+    -i ${logsid} -re "${datapfx}tank-near${dskip} temp=${datare}${dskip}\n"  { drawtemp 1 "v_lt" 9  3 }
+    -i ${logsid} -re "${datapfx}tank-far${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_rt" 9  4 }
+    -i ${logsid} -re "${datapfx}tank-mid${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_mt" 3  2 }
+    -i ${logsid} -re "${datapfx}tank-mid${dskip} humid=${datare}${dskip}\n"  { drawtemp 1 "v_mh" 9  2 }
+    -i ${logsid} -re "${datapfx}dmx-near${dskip} dmx=${datare}${dskip}\n" {
+      set hex [ format %X ${expect_out(1,string)} ]
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldmx 15 3 ${hex}"
     }
-    -i ${logsid} -re "${datapfx}dmx-mid.* dmx=${datare}.*\n" {
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_rdmx 18 4 ${expect_out(1,string)}"
+    -i ${logsid} -re "${datapfx}dmx-mid${dskip} dmx=${datare}${dskip}\n" {
+      set hex [ format %X ${expect_out(1,string)} ]
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_rdmx 15 4 ${hex}"
     }
     -i ${logsid} -re "\n" {}
-    -i ${sid} -re "^listen .*\n" {}
-    -i ${sid} -re "^ignore .*\n" {}
+
+    -i ${doorlogsid} -re "${datapfx}door${dskip} left=${datare} right=${datare}${dskip}\n" {
+      set o [ expr { ${expect_out(1,string)} == 0 ? " " : "!" } ]
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldoor 18 3 \"$o\""
+
+      set o [ expr { ${expect_out(2,string)} == 0 ? " " : "!" } ]
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_rdoor 18 4 \"$o\""
+    }
+    -i ${doorlogsid} -re "\n" {}
+
+    -i ${sid} -re "^listen ${dskip}\n" {}
+    -i ${sid} -re "^ignore ${dskip}\n" {}
   }
 }

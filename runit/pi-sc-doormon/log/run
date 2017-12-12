@@ -1,0 +1,4 @@
+#!/bin/sh
+mkdir -p /run/snakecontrol/door-monitor.log
+chown -R pi:pi /run/snakecontrol/door-monitor.log
+exec chpst -u pi svlogd -tt /run/snakecontrol/door-monitor.log
