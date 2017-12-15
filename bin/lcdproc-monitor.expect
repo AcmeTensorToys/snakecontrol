@@ -20,22 +20,22 @@ set sid [::lcdproclib::spawnlcd "localhost" "13666"]
 ::lcdproclib::cmd ${sid} "widget_set 1 ti Vivarium"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_up string"
-::lcdproclib::cmd ${sid} "widget_set 1 i_up 1 2 M"
+::lcdproclib::cmd ${sid} "widget_set 1 i_up 1 3 M"
 ::lcdproclib::cmd ${sid} "widget_add 1 i_mt string"
-::lcdproclib::cmd ${sid} "widget_set 1 i_mt 2 2 T"
+::lcdproclib::cmd ${sid} "widget_set 1 i_mt 2 3 T"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_mt string"
 ::lcdproclib::cmd ${sid} "widget_add 1 i_mh string"
-::lcdproclib::cmd ${sid} "widget_set 1 i_mh 8 2 H"
+::lcdproclib::cmd ${sid} "widget_set 1 i_mh 8 3 H"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_mh string"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_l icon"
-::lcdproclib::cmd ${sid} "widget_set 1 i_l 1 3 ARROW_LEFT"
+::lcdproclib::cmd ${sid} "widget_set 1 i_l 1 2 ARROW_LEFT"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_r icon"
 ::lcdproclib::cmd ${sid} "widget_set 1 i_r 1 4 ARROW_RIGHT"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_lh icon"
-::lcdproclib::cmd ${sid} "widget_set 1 i_lh 2 3 ARROW_DOWN"
+::lcdproclib::cmd ${sid} "widget_set 1 i_lh 2 2 ARROW_DOWN"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_lh string"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_rh icon"
@@ -43,24 +43,24 @@ set sid [::lcdproclib::spawnlcd "localhost" "13666"]
 ::lcdproclib::cmd ${sid} "widget_add 1 v_rh string"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_lt icon"
-::lcdproclib::cmd ${sid} "widget_set 1 i_lt 8 3 ARROW_UP"
+::lcdproclib::cmd ${sid} "widget_set 1 i_lt 8 2 ARROW_UP"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_lt string"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 i_rt icon"
 ::lcdproclib::cmd ${sid} "widget_set 1 i_rt 8 4 ARROW_UP"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_rt string"
 
-::lcdproclib::cmd ${sid} "widget_add 1 v_mdmxl string"
-::lcdproclib::cmd ${sid} "widget_set 1 v_mdmxl 14 3 @"
-::lcdproclib::cmd ${sid} "widget_add 1 v_mdmx string"
-
 ::lcdproclib::cmd ${sid} "widget_add 1 v_ldmxl string"
-::lcdproclib::cmd ${sid} "widget_set 1 v_ldmxl 14 3 @"
+::lcdproclib::cmd ${sid} "widget_set 1 v_ldmxl 14 2 @"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_ldmx string"
+
+::lcdproclib::cmd ${sid} "widget_add 1 v_hdmxl string"
+::lcdproclib::cmd ${sid} "widget_set 1 v_hdmxl 14 3 @"
+::lcdproclib::cmd ${sid} "widget_add 1 v_hdmx string"
  
-::lcdproclib::cmd ${sid} "widget_add 1 v_rdmxl string"
-::lcdproclib::cmd ${sid} "widget_set 1 v_rdmxl 14 4 @"
-::lcdproclib::cmd ${sid} "widget_add 1 v_rdmx string"
+::lcdproclib::cmd ${sid} "widget_add 1 v_mdmxl string"
+::lcdproclib::cmd ${sid} "widget_set 1 v_mdmxl 14 4 @"
+::lcdproclib::cmd ${sid} "widget_add 1 v_mdmx string"
 
 ::lcdproclib::cmd ${sid} "widget_add 1 v_ldoor string"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_rdoor string"
@@ -80,25 +80,25 @@ set dskip "\[^\n\]*"
 
 while { true } {
   expect {
-    -i ${logsid} -re "${datapfx}hide-near${dskip} temp=${datare}${dskip}\n"  { drawtemp 1 "v_lh" 3  3 }
+    -i ${logsid} -re "${datapfx}hide-near${dskip} temp=${datare}${dskip}\n"  { drawtemp 1 "v_lh" 3  2 }
     -i ${logsid} -re "${datapfx}hide-far${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_rh" 3  4 }
-    -i ${logsid} -re "${datapfx}tank-near${dskip} temp=${datare}${dskip}\n"  { drawtemp 1 "v_lt" 9  3 }
+    -i ${logsid} -re "${datapfx}tank-near${dskip} temp=${datare}${dskip}\n"  { drawtemp 1 "v_lt" 9  2 }
     -i ${logsid} -re "${datapfx}tank-far${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_rt" 9  4 }
-    -i ${logsid} -re "${datapfx}tank-mid${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_mt" 3  2 }
-    -i ${logsid} -re "${datapfx}tank-mid${dskip} humid=${datare}${dskip}\n"  { drawtemp 1 "v_mh" 9  2 }
-    -i ${logsid} -re "${datapfx}dmx-near${dskip} dmx=${datare}${dskip}\n" {
+    -i ${logsid} -re "${datapfx}tank-mid${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_mt" 3  3 }
+    -i ${logsid} -re "${datapfx}tank-mid${dskip} humid=${datare}${dskip}\n"  { drawtemp 1 "v_mh" 9  3 }
+    -i ${logsid} -re "${datapfx}dmx-hidenear${dskip} dmx=${datare}${dskip}\n" {
       set hex [ format %X ${expect_out(1,string)} ]
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldmx 15 3 ${hex}"
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_hdmx 15 3 ${hex}"
     }
-    -i ${logsid} -re "${datapfx}dmx-mid${dskip} dmx=${datare}${dskip}\n" {
+    -i ${logsid} -re "${datapfx}dmx-tanknear${dskip} dmx=${datare}${dskip}\n" {
       set hex [ format %X ${expect_out(1,string)} ]
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_rdmx 15 4 ${hex}"
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldmx 15 2 ${hex}"
     }
     -i ${logsid} -re "\n" {}
 
     -i ${doorlogsid} -re "${datapfx}door${dskip} left=${datare} right=${datare}${dskip}\n" {
       set o [ expr { ${expect_out(1,string)} == 0 ? " " : "!" } ]
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldoor 18 3 \"$o\""
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldoor 18 2 \"$o\""
 
       set o [ expr { ${expect_out(2,string)} == 0 ? " " : "!" } ]
       ::lcdproclib::cmd ${sid} "widget_set 1 v_rdoor 18 4 \"$o\""
