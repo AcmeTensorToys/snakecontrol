@@ -45,6 +45,9 @@ proc spawninotify {filename} {
 
 set filename "/run/snakecontrol/remind.out"
 
+# Ensure that the file exists before we go to watch it.
+system "touch ${filename}"
+
 set waitsid [spawninotify ${filename}]
 
 while { true } {
