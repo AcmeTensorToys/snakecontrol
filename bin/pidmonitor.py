@@ -20,9 +20,24 @@ loop_hidenear.setHardMin(-128)
 loop_hidenear.setKP(60.0)
 loop_hidenear.setKI(0.004)
 loop_hidenear.setKD(1000.0,0.95) 
-loop_hidenear.sum_error = -7600.0 # XXX Initialize offset point a bit
+loop_hidenear.sum_error = 7600.0 # XXX Initialize offset point a bit
+
+loop_tanknear = pidloop.PIDThresh(128,22,23,0,26,28,-128)
+loop_tanknear.setPoint(25)
+loop_tanknear.setHardMax(128)
+loop_tanknear.setHardMin(-128)
+loop_tanknear.setKP(60.0)   # XXX These are un-tuned
+loop_tanknear.setKI(0.004)
+loop_tanknear.setKD(1000.0,0.95)
 
 bmemid = BME280.BME280(port=1, address=0x77)
+
+def log(devfn, temp, logname, rrd, kw="temp"):
+    rrdtool.update(rrd, "N:" + ("%f" % temp))
+    print ("DATA: %s %s=%s" % (logname, kw, temp))
+
+def logfail(devfn, name, *arg):
+    print ("FAIL: %s %s %s" % (name, devfn, arg))
 
 def with_ow_temp_fk_id2(devfn, loop, s, *arg, **kwarg):
     print("WARNING: failed to read %s" % devfn)
@@ -40,17 +55,26 @@ def with_ow_temp(cache, devfn, sk, fk, *arg, **kwarg):
             return sk(devfn, val, *arg, **kwarg)
     return fk(devfn, *arg, **kwarg)
 
+def checkpid(devfn, temp, loop, s, offset, rrd, logname):
+    desire = 128.0 + loop.update(temp, time.time())
+
+    if desire < 0 :
+        desire = 0
+        loop.output = 0
+    elif desire > 255 :
+        desire = 255
+        loop.output = 255
+
+    rrdtool.update(rrd, "N:" + ("%f" % desire))
+    dmx = int(desire+0.5)
+    print("DATA: %s dmx=%s" % (logname, dmx))
+
+    return s[:offset] + chr(dmx) + s[offset+1:]
+
 def check_temps(sc):
     sc.enter(10, 1, check_temps, (sc,))
 
     cache = {}
-
-    def log(devfn, temp, logname, rrd, kw="temp"):
-        rrdtool.update(rrd, "N:" + ("%f" % temp))
-        print ("DATA: %s %s=%s" % (logname, kw, temp))
-
-    def logfail(devfn, name, *arg):
-        print ("FAIL: %s %s %s" % (name, devfn, arg))
 
     # BME280 atop
     try:
@@ -86,23 +110,6 @@ def check_temps(sc):
                  "/sys/bus/w1/devices/28-0416526de6ff/w1_slave", log, logfail,
                 "tank-top", "/home/pi/sc/data/tank-top-temp.rrd")
 
-
-    def checkpid(devfn, temp, loop, s, offset, rrd, logname):
-        desire = 128.0 + loop.update(temp, time.time())
-
-        if desire < 0 :
-            desire = 0
-            loop.output = 0
-        elif desire > 255 :
-            desire = 255
-            loop.output = 255
-
-        rrdtool.update(rrd, "N:" + ("%f" % desire))
-        dmx = int(desire+0.5)
-        print("DATA: %s dmx=%s" % (logname, dmx))
-
-        return s[:offset] + chr(dmx) + s[offset+1:]
-
     # DMX conttrol string; initialize to all channels full off
     # 7E -- header
     # 06 -- type
@@ -118,9 +125,10 @@ def check_temps(sc):
 
     # Drive loop
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620f10dee/w1_slave",
-            checkpid, with_ow_temp_fk_id2, loop_hidenear, s, 5, "/home/pi/sc/data/hide-near-dmx.rrd", "dmx-near")
+            checkpid, with_ow_temp_fk_id2, loop_hidenear, s, 5, "/home/pi/sc/data/hide-near-dmx.rrd", "dmx-hidenear")
 
-    # Log some other probes
+    s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620c805ee/w1_slave",
+            checkpid, with_ow_temp_fk_id2, loop_tanknear, s, 6, "/home/pi/sc/data/tank-near-dmx.rrd", "dmx-tanknear")
 
     print ("check temps fini: out=%r lhn=(%s)" % (s, loop_hidenear))
     assert(dmxdev.write(s) == len(s))

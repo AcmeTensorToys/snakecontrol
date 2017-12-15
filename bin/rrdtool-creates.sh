@@ -26,6 +26,7 @@ done
 
 RRDS=(
   hide-near-dmx
+  tank-near-dmx
 )
 
 ARGS=(
