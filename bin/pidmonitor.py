@@ -105,15 +105,15 @@ def check_temps(sc):
                  "tank-far", "/home/pi/sc/data/tank-far-temp.rrd")
 
     with_ow_temp(cache,
-                 "/sys/bus/w1/devices/28-03164712aaff/w1_slave", log, logfail,
+                 "/sys/bus/w1/devices/28-041652ea8bff/w1_slave", log, logfail,
                  "heater-near", "/home/pi/sc/data/heater-temp.rrd")
 
     with_ow_temp(cache,
-                 "/sys/bus/w1/devices/28-011620c805ee/w1_slave", log, logfail,
+                 "/sys/bus/w1/devices/28-0416526de6ff/w1_slave", log, logfail,
                  "tank-near", "/home/pi/sc/data/tank-near-temp.rrd")
 
     with_ow_temp(cache,
-                 "/sys/bus/w1/devices/28-0416526de6ff/w1_slave", log, logfail,
+                 "/sys/bus/w1/devices/28-0316479295ff/w1_slave", log, logfail,
                 "tank-top", "/home/pi/sc/data/tank-top-temp.rrd")
 
     # DMX conttrol string; initialize to all channels full off
@@ -133,7 +133,7 @@ def check_temps(sc):
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620f10dee/w1_slave",
             checkpid, with_ow_temp_fk_id3, loop_hidenear, s, 5, "/home/pi/sc/data/hide-near-dmx.rrd", "dmx-hidenear")
 
-    s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620c805ee/w1_slave",
+    s = with_ow_temp(cache, "/sys/bus/w1/devices/28-0416526de6ff/w1_slave",
             checkpid, with_ow_temp_fk_id3, loop_tanknear, s, 6, "/home/pi/sc/data/tank-near-dmx.rrd", "dmx-tanknear")
 
     print ("check temps fini: out=%r lhn=(%s)" % (s, loop_hidenear))
