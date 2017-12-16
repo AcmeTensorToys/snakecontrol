@@ -11,11 +11,11 @@ REM AT [sunrise()] RUN /home/pi/sc/bin/rpb.expect 1 on > /dev/null
 REM AT [sunset()]  MSG Lights off...
 REM AT [sunset()]  RUN /home/pi/sc/bin/rpb.expect 1 off > /dev/null
 
-REM AT [sunrise() - 45] MSG Aerator on
-REM AT [sunrise() - 45] RUN /home/pi/sc/bin/rpb.expect 4 on > /dev/null
-REM AT [sunrise() + 45] MSG Aerator off
-REM AT [sunrise() + 45] RUN /home/pi/sc/bin/rpb.expect 4 off > /dev/null
-REM AT [sunset()  - 45] MSG Aerator on
-REM AT [sunset()  - 45] RUN /home/pi/sc/bin/rpb.expect 4 on > /dev/null
-REM AT [sunset()  + 45] MSG Aerator off
-REM AT [sunset()  + 45] RUN /home/pi/sc/bin/rpb.expect 4 off > /dev/null
+# REM AT [sunrise() - 45] MSG Aerator on
+# REM AT [sunrise() - 45] RUN /home/pi/sc/bin/rpb.expect 4 on > /dev/null
+# REM AT [sunrise() + 45] MSG Aerator off
+# REM AT [sunrise() + 45] RUN /home/pi/sc/bin/rpb.expect 4 off > /dev/null
+# REM AT [sunset()  - 45] MSG Aerator on
+# REM AT [sunset()  - 45] RUN /home/pi/sc/bin/rpb.expect 4 on > /dev/null
+# REM AT [sunset()  + 45] MSG Aerator off
+# REM AT [sunset()  + 45] RUN /home/pi/sc/bin/rpb.expect 4 off > /dev/null
