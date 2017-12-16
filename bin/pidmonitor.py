@@ -33,27 +33,33 @@ loop_tanknear.setKD(1000.0,0.95)
 bmemid = BME280.BME280(port=1, address=0x77)
 
 def log(devfn, temp, logname, rrd, kw="temp"):
-    rrdtool.update(rrd, "N:" + ("%f" % temp))
+    try:
+        rrdtool.update(rrd, "N:" + ("%f" % temp))
+    except Exception, e :
+            print("WARN: Cannot log %s: %s ." % (logname, e))
     print ("DATA: %s %s=%s" % (logname, kw, temp))
 
 def logfail(devfn, name, *arg):
-    print ("FAIL: %s %s %s" % (name, devfn, arg))
+    print ("FAIL: %s ; %s ; %s ." % (name, devfn, arg))
 
-def with_ow_temp_fk_id2(devfn, loop, s, *arg, **kwarg):
+def with_ow_temp_fk_id3(devfn, loop, err, s, *arg, **kwarg):
     print("WARNING: failed to read %s" % devfn)
     return s # an ugly default
 
 def with_ow_temp(cache, devfn, sk, fk, *arg, **kwarg):
     if devfn in cache :
         return sk(devfn, cache[devfn], *arg, **kwarg)
-    with open(devfn) as devf:
-        devstr = devf.read()
-        devlines = devstr.split("\n")
-        if devlines[0].find("YES") > 0:
-            val = float((devlines[1].split(" ")[9])[2:]) / 1000
-            cache[devfn] = val
-            return sk(devfn, val, *arg, **kwarg)
-    return fk(devfn, *arg, **kwarg)
+    try:
+        with open(devfn) as devf:
+            devstr = devf.read()
+            devlines = devstr.split("\n")
+            if devlines[0].find("YES") > 0:
+                val = float((devlines[1].split(" ")[9])[2:]) / 1000
+                cache[devfn] = val
+                return sk(devfn, val, *arg, **kwarg)
+    except Exception as e:
+            fk(devfn, e, *arg, **kwarg)
+    return fk(devfn, None, *arg, **kwarg)
 
 def checkpid(devfn, temp, loop, s, offset, rrd, logname):
     desire = 128.0 + loop.update(temp, time.time())
@@ -125,10 +131,10 @@ def check_temps(sc):
 
     # Drive loop
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620f10dee/w1_slave",
-            checkpid, with_ow_temp_fk_id2, loop_hidenear, s, 5, "/home/pi/sc/data/hide-near-dmx.rrd", "dmx-hidenear")
+            checkpid, with_ow_temp_fk_id3, loop_hidenear, s, 5, "/home/pi/sc/data/hide-near-dmx.rrd", "dmx-hidenear")
 
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620c805ee/w1_slave",
-            checkpid, with_ow_temp_fk_id2, loop_tanknear, s, 6, "/home/pi/sc/data/tank-near-dmx.rrd", "dmx-tanknear")
+            checkpid, with_ow_temp_fk_id3, loop_tanknear, s, 6, "/home/pi/sc/data/tank-near-dmx.rrd", "dmx-tanknear")
 
     print ("check temps fini: out=%r lhn=(%s)" % (s, loop_hidenear))
     assert(dmxdev.write(s) == len(s))
