@@ -2,23 +2,42 @@
 
 package require lcdproclib
 
+set hasscreen 0
 set lcdsid [::lcdproclib::spawnlcd "localhost" "13666"]
 ::lcdproclib::cmd ${lcdsid} "client_set -name remind"
 
-::lcdproclib::cmd ${lcdsid} "screen_add 1"
-::lcdproclib::cmd ${lcdsid} "screen_set 1 -name Reminders"
-::lcdproclib::cmd ${lcdsid} "screen_set 1 -priority hidden"
-::lcdproclib::cmd ${lcdsid} "screen_set 1 -cursor off"
+proc scradd {} {
+    variable lcdsid
+    variable hasscreen
 
-::lcdproclib::cmd ${lcdsid} "widget_add 1 ti title"
-::lcdproclib::cmd ${lcdsid} "widget_set 1 ti Reminders"
+    if {$hasscreen} { return } 
 
-::lcdproclib::cmd ${lcdsid} "widget_add 1 v1 string"
-::lcdproclib::cmd ${lcdsid} "widget_add 1 v2 string"
-::lcdproclib::cmd ${lcdsid} "widget_add 1 v3 string"
+    ::lcdproclib::cmd ${lcdsid} "screen_add 1"
+    ::lcdproclib::cmd ${lcdsid} "screen_set 1 -name Reminders"
+    ::lcdproclib::cmd ${lcdsid} "screen_set 1 -priority hidden"
+    ::lcdproclib::cmd ${lcdsid} "screen_set 1 -cursor off"
+    
+    ::lcdproclib::cmd ${lcdsid} "widget_add 1 ti title"
+    ::lcdproclib::cmd ${lcdsid} "widget_set 1 ti Reminders"
+    
+    ::lcdproclib::cmd ${lcdsid} "widget_add 1 v1 string"
+    ::lcdproclib::cmd ${lcdsid} "widget_add 1 v2 string"
+    ::lcdproclib::cmd ${lcdsid} "widget_add 1 v3 string"
+    
+    ::lcdproclib::cmd ${lcdsid} "screen_set 1 -priority info"
 
-::lcdproclib::cmd ${lcdsid} "screen_set 1 -priority info"
+    set hasscreen 1
+}
 
+proc scrdel {} {
+    variable lcdsid
+    variable hasscreen
+
+    if {[expr {!$hasscreen}]} { return } 
+
+    ::lcdproclib::cmd ${lcdsid} "screen_del 1"
+    set hasscreen 0
+}
 
 proc reload {lcdsid filename} {
   try {
@@ -29,10 +48,19 @@ proc reload {lcdsid filename} {
     return
   }
 
-  ::lcdproclib::cmd ${lcdsid} "widget_set 1 ti {[gets $fp]}"
-  ::lcdproclib::cmd ${lcdsid} "widget_set 1 v1 1 2 {[gets $fp]}"
-  ::lcdproclib::cmd ${lcdsid} "widget_set 1 v2 1 3 {[gets $fp]}"
-  ::lcdproclib::cmd ${lcdsid} "widget_set 1 v3 1 4 {[gets $fp]}"
+  set line1 [gets $fp]
+
+  if {   [string equal "$line1" ""]
+      || [string equal -nocase "$line1" "No Reminders."]} {
+    scrdel
+    return
+  } else {
+    scradd
+    ::lcdproclib::cmd ${lcdsid} "widget_set 1 ti {$line1}"
+    ::lcdproclib::cmd ${lcdsid} "widget_set 1 v1 1 2 {[gets $fp]}"
+    ::lcdproclib::cmd ${lcdsid} "widget_set 1 v2 1 3 {[gets $fp]}"
+    ::lcdproclib::cmd ${lcdsid} "widget_set 1 v3 1 4 {[gets $fp]}"
+  }
 
   close ${fp}
 }
