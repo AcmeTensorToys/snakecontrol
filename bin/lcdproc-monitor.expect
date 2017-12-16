@@ -50,28 +50,44 @@ set sid [::lcdproclib::spawnlcd "localhost" "13666"]
 ::lcdproclib::cmd ${sid} "widget_set 1 i_rt 8 4 ARROW_UP"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_rt string"
 
-::lcdproclib::cmd ${sid} "widget_add 1 v_ldmxl string"
-::lcdproclib::cmd ${sid} "widget_set 1 v_ldmxl 14 2 @"
+# Can't use vbars and icons at the same time.  Dammit!
+::lcdproclib::cmd ${sid} "widget_add 1 v_dmxl string"
+::lcdproclib::cmd ${sid} "widget_set 1 v_dmxl 14 3 @"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_ldmx string"
-
-::lcdproclib::cmd ${sid} "widget_add 1 v_hdmxl string"
-::lcdproclib::cmd ${sid} "widget_set 1 v_hdmxl 14 3 @"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_hdmx string"
- 
-::lcdproclib::cmd ${sid} "widget_add 1 v_mdmxl string"
-::lcdproclib::cmd ${sid} "widget_set 1 v_mdmxl 14 4 @"
 ::lcdproclib::cmd ${sid} "widget_add 1 v_mdmx string"
 
-::lcdproclib::cmd ${sid} "widget_add 1 v_ldoor string"
-::lcdproclib::cmd ${sid} "widget_add 1 v_rdoor string"
+::lcdproclib::cmd ${sid} "widget_add 1 v_doorl icon"
+::lcdproclib::cmd ${sid} "widget_set 1 v_doorl 19 3 CHECKBOX_OFF"
+::lcdproclib::cmd ${sid} "widget_add 1 v_door string"
+::lcdproclib::cmd ${sid} "widget_set 1 v_door 20 3 ?"
+
+::lcdproclib::cmd ${sid} "widget_add 1 v_tickl string"
+# ::lcdproclib::cmd ${sid} "widget_add 1 v_tickt string"
 
 ::lcdproclib::cmd ${sid} "screen_set 1 -priority info"
 
+set loopctr 0
+# set tempctr 0
+
 proc drawtemp { scr wid x y } {
-  global sid
-  global expect_out
+  variable sid
+  variable expect_out
+  variable tempctr
+
   set t [expr round(${expect_out(1,string)}*10.0)/10.0]
   ::lcdproclib::cmd ${sid} "widget_set ${scr} ${wid} ${x} ${y} ${t}"
+
+  # ::lcdproclib::cmd ${sid} "widget_set 1 v_tickt 19 2 ${tempctr}"
+  # set tempctr [expr (${tempctr} + 1) % 10]
+}
+
+# Render DMX as "A" (0-9) through "Z" (250-255)
+proc drawdmx { scr wid x y } {
+  variable sid
+  variable expect_out
+  set t [ format %c [ expr 65 + ${expect_out(1,string)} / 10 ] ]
+  ::lcdproclib::cmd ${sid} "widget_set ${scr} ${wid} ${x} ${y} {${t}}"
 }
 
 set datapfx "^\[^ \]* DATA: "
@@ -86,22 +102,33 @@ while { true } {
     -i ${logsid} -re "${datapfx}tank-far${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_rt" 9  4 }
     -i ${logsid} -re "${datapfx}tank-mid${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_mt" 3  3 }
     -i ${logsid} -re "${datapfx}tank-mid${dskip} humid=${datare}${dskip}\n"  { drawtemp 1 "v_mh" 9  3 }
-    -i ${logsid} -re "${datapfx}dmx-hidenear${dskip} dmx=${datare}${dskip}\n" {
-      set hex [ format %X ${expect_out(1,string)} ]
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_hdmx 15 3 ${hex}"
-    }
-    -i ${logsid} -re "${datapfx}dmx-tanknear${dskip} dmx=${datare}${dskip}\n" {
-      set hex [ format %X ${expect_out(1,string)} ]
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldmx 15 2 ${hex}"
+    -i ${logsid} -re "${datapfx}dmx-tanknear${dskip} dmx=${datare}${dskip}\n" { drawdmx 1 "v_ldmx" 15 3 }
+    -i ${logsid} -re "${datapfx}dmx-hidenear${dskip} dmx=${datare}${dskip}\n" { drawdmx 1 "v_hdmx" 16 3 }
+    -i ${logsid} -re "\[^ :\]*:..:..\.\[^ \]* check temps fini${dskip}\n" {
+      ::lcdproclib::cmd ${sid} "widget_set 1 v_tickl 20 2 ${loopctr}"
+      set loopctr [expr (${loopctr} + 1) % 10]
     }
     -i ${logsid} -re "\n" {}
 
     -i ${doorlogsid} -re "${datapfx}door${dskip} left=${datare} right=${datare}${dskip}\n" {
-      set o [ expr { ${expect_out(1,string)} == 0 ? " " : "!" } ]
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_ldoor 18 2 \"$o\""
-
-      set o [ expr { ${expect_out(2,string)} == 0 ? " " : "!" } ]
-      ::lcdproclib::cmd ${sid} "widget_set 1 v_rdoor 18 4 \"$o\""
+      switch -regexp "${expect_out(1,string)}${expect_out(2,string)}" {
+        "00" {
+            ::lcdproclib::cmd ${sid} "widget_set 1 v_doorl 19 3 CHECKBOX_ON"
+            ::lcdproclib::cmd ${sid} "widget_set 1 v_door  20 3 { }"
+        }
+        "0." {
+            ::lcdproclib::cmd ${sid} "widget_set 1 v_doorl 19 3 CHECKBOX_OFF"
+            ::lcdproclib::cmd ${sid} "widget_set 1 v_door  20 3 R"
+        }
+        ".0" {
+            ::lcdproclib::cmd ${sid} "widget_set 1 v_doorl 19 3 CHECKBOX_OFF"
+            ::lcdproclib::cmd ${sid} "widget_set 1 v_door  20 3 L"
+        }
+        default {
+            ::lcdproclib::cmd ${sid} "widget_set 1 v_doorl 19 3 CHECKBOX_OFF"
+            ::lcdproclib::cmd ${sid} "widget_set 1 v_door  20 3 B"
+        }
+      }
     }
     -i ${doorlogsid} -re "\n" {}
 
