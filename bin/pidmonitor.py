@@ -136,7 +136,7 @@ def check_temps(sc):
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-0416526de6ff/w1_slave",
             checkpid, with_ow_temp_fk_id3, loop_tanknear, s, 6, "/home/pi/sc/data/tank-near-dmx.rrd", "dmx-tanknear")
 
-    print ("check temps fini: out=%r lhn=(%s)" % (s, loop_hidenear))
+    print ("check temps fini: out=%r lhn=(%s) ltn=(%s)" % (s, loop_hidenear, loop_tanknear))
     assert(dmxdev.write(s) == len(s))
 
 itime = time.time()
