@@ -68,47 +68,42 @@ set sid [::lcdproclib::spawnlcd "localhost" "13666"]
 ::lcdproclib::cmd ${sid} "screen_set 1 -priority info"
 
 set loopctr 0
-# set tempctr 0
 
-proc drawtemp { scr wid x y } {
-  variable sid
-  variable expect_out
-  variable tempctr
-
-  set t [expr round(${expect_out(1,string)}*10.0)/10.0]
+proc drawtemp { sid scr wid x y v } {
+  set t [expr round(${v}*10.0)/10.0]
   ::lcdproclib::cmd ${sid} "widget_set ${scr} ${wid} ${x} ${y} ${t}"
-
-  # ::lcdproclib::cmd ${sid} "widget_set 1 v_tickt 19 2 ${tempctr}"
-  # set tempctr [expr (${tempctr} + 1) % 10]
 }
 
 # Render DMX as "A" (0-9) through "Z" (250-255)
-proc drawdmx { scr wid x y } {
-  variable sid
-  variable expect_out
-  set t [ format %c [ expr 65 + ${expect_out(1,string)} / 10 ] ]
+proc drawdmx { sid scr wid x y d } {
+  set t [ format %c [ expr 65 + ${d} / 10 ] ]
   ::lcdproclib::cmd ${sid} "widget_set ${scr} ${wid} ${x} ${y} {${t}}"
 }
 
 set datapfx "^\[^ \]* DATA: "
-set datare "(\[^ \r\n]*)"
+set datare "(\[^ \r\n\]*)"
 set dskip "\[^\n\]*"
 
 while { true } {
   expect {
-    -i ${logsid} -re "${datapfx}hide-near${dskip} temp=${datare}${dskip}\n"  { drawtemp 1 "v_lh" 3  2 }
-    -i ${logsid} -re "${datapfx}hide-far${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_rh" 3  4 }
-    -i ${logsid} -re "${datapfx}tank-near${dskip} temp=${datare}${dskip}\n"  { drawtemp 1 "v_lt" 9  2 }
-    -i ${logsid} -re "${datapfx}tank-far${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_rt" 9  4 }
-    -i ${logsid} -re "${datapfx}tank-mid${dskip} temp=${datare}${dskip}\n"   { drawtemp 1 "v_mt" 3  3 }
-    -i ${logsid} -re "${datapfx}tank-mid${dskip} humid=${datare}${dskip}\n"  { drawtemp 1 "v_mh" 9  3 }
-    -i ${logsid} -re "${datapfx}dmx-tanknear${dskip} dmx=${datare}${dskip}\n" { drawdmx 1 "v_ldmx" 15 3 }
-    -i ${logsid} -re "${datapfx}dmx-hidenear${dskip} dmx=${datare}${dskip}\n" { drawdmx 1 "v_hdmx" 16 3 }
+    -i ${logsid} -re "${datapfx}(${dskip})\n" {
+      # This uses the many-argument form of switch to get expansion inside the
+      # templates.  That's a little gross, but so it goes.
+      switch -regexp -matchvar m -- "${expect_out(1,string)}" \
+        "hide-near temp=${datare}"   { drawtemp ${sid} 1 "v_lh"    3 2 [lindex ${m} 1] } \
+        "hide-far temp=${datare}"    { drawtemp ${sid} 1 "v_rh"    3 4 [lindex ${m} 1] } \
+        "tank-near temp=${datare}"   { drawtemp ${sid} 1 "v_lt"    9 2 [lindex ${m} 1] } \
+        "tank-far temp=${datare}"    { drawtemp ${sid} 1 "v_rt"    9 4 [lindex ${m} 1] } \
+        "tank-mid temp=${datare}"    { drawtemp ${sid} 1 "v_mt"    3 3 [lindex ${m} 1] } \
+        "tank-mid humid=${datare}"   { drawtemp ${sid} 1 "v_mh"    9 3 [lindex ${m} 1] } \
+        "dmx-tanknear dmx=${datare}" { drawdmx  ${sid} 1 "v_ldmx" 15 3 [lindex ${m} 1] } \
+        "dmx-hidenear dmx=${datare}" { drawdmx  ${sid} 1 "v_hdmx" 16 3 [lindex ${m} 1] } \
+    }
     -i ${logsid} -re "\[^ :\]*:..:..\.\[^ \]* check temps fini${dskip}\n" {
       ::lcdproclib::cmd ${sid} "widget_set 1 v_tickl 20 2 ${loopctr}"
       set loopctr [expr (${loopctr} + 1) % 10]
     }
-    -i ${logsid} -re "\n" {}
+    -i ${logsid} -re "${dskip}\n" {}
 
     -i ${doorlogsid} -re "${datapfx}door${dskip} left=${datare} right=${datare}${dskip}\n" {
       switch -regexp "${expect_out(1,string)}${expect_out(2,string)}" {
@@ -130,9 +125,10 @@ while { true } {
         }
       }
     }
-    -i ${doorlogsid} -re "\n" {}
+    -i ${doorlogsid} -re "${dskip}\n" {}
 
-    -i ${sid} -re "^listen ${dskip}\n" {}
-    -i ${sid} -re "^ignore ${dskip}\n" {}
+    # -i ${sid} -re "^listen ${dskip}\n" {}
+    # -i ${sid} -re "^ignore ${dskip}\n" {}
+    -i ${sid} -re "${dskip}\n" {}
   }
 }

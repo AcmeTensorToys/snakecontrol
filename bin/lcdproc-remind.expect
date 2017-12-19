@@ -85,7 +85,8 @@ while { true } {
       set waitsid [spawninotify ${filename}]
     }
     -i ${waitsid} "Watches established." { reload ${lcdsid} ${filename} }
-    -i ${lcdsid} -re "^listen .*\n" {}
-    -i ${lcdsid} -re "^ignore .*\n" {}
+    -i ${lcdsid} -re "^listen \[^\n\]*\n" {}
+    -i ${lcdsid} -re "^ignore \[^\n\]*\n" {}
+    -i ${lcdsid} -re "\[^\n\]*\n" {}
   }
 }
