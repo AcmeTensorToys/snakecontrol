@@ -30,6 +30,14 @@ loop_tanknear.setKP(60.0)   # XXX These are un-tuned
 loop_tanknear.setKI(0.004)
 loop_tanknear.setKD(1000.0,0.95)
 
+loop_hidefar = pidloop.PIDThresh(128,19,21,0,24,25,-128)
+loop_hidefar.setPoint(23)
+loop_hidefar.setHardMax(128)
+loop_hidefar.setHardMin(-128)
+loop_hidefar.setKP(60.0)   # XXX These are un-tuned
+loop_hidefar.setKI(0.004)
+loop_hidefar.setKD(1000.0,0.95)
+
 bmemid = BME280.BME280(port=1, address=0x77)
 
 def log(devfn, temp, logname, rrd, kw="temp"):
@@ -135,6 +143,9 @@ def check_temps(sc):
 
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-0416526de6ff/w1_slave",
             checkpid, with_ow_temp_fk_id3, loop_tanknear, s, 6, "/home/pi/sc/data/tank-near-dmx.rrd", "dmx-tanknear")
+
+    s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620c718ee/w1_slave",
+            checkpid, with_ow_temp_fk_id3, loop_hidefar, s, 7, "/home/pi/sc/data/hide-far-dmx.rrd", "dmx-hidefar")
 
     print ("check temps fini: out=%r lhn=(%s) ltn=(%s)" % (s, loop_hidenear, loop_tanknear))
     assert(dmxdev.write(s) == len(s))

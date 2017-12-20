@@ -21,8 +21,10 @@ DMX_ARGS=(
 	--right-axis-label "DMX" --right-axis 1:0
         DEF:dmxTN=${DATA_DIR}/tank-near-dmx.rrd:dmx:AVERAGE
         DEF:dmxHN=${DATA_DIR}/hide-near-dmx.rrd:dmx:AVERAGE
+        DEF:dmxHF=${DATA_DIR}/hide-far-dmx.rrd:dmx:AVERAGE
 	LINE:dmxTN\#800000:"left side"
 	LINE:dmxHN\#008000:"left hide"
+	LINE:dmxHF\#000080:"right hide"
 )
 
 NEAR_ARGS=(
@@ -39,6 +41,7 @@ NEAR_ARGS=(
         LINE2:tempHN\#808000:"hide left"
         LINE2:tempTN\#00FF00:"tank left"
         HRULE:30#800000
+        HRULE:25#000080
 )
 
 HUMID_SCALE=$(( 100.0/(TEMP_SCALE_UPPER-TEMP_SCALE_LOWER) ))
@@ -64,6 +67,7 @@ FAR_ARGS=(
         DEF:tempTF=${DATA_DIR}/tank-far-temp.rrd:temp:AVERAGE
         LINE2:tempHF\#FF8000:"hide right"
         LINE2:tempTF\#00FFFF:"tank right"
+        HRULE:23#800000
 )
 
 
