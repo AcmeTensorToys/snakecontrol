@@ -19,7 +19,7 @@ loop_hidenear.setHardMax(128)
 loop_hidenear.setHardMin(-128)
 loop_hidenear.setKP(60.0)
 loop_hidenear.setKI(0.004)
-loop_hidenear.setKD(1000.0,0.95) 
+loop_hidenear.setKD(1000.0,0.95)
 loop_hidenear.sum_error = 7600.0 # XXX Initialize offset point a bit
 
 loop_tanknear = pidloop.PIDThresh(128,22,23,0,26,28,-128)
@@ -135,7 +135,7 @@ def check_temps(sc):
     # nn -- channel 4 value
     # E7 -- footer
     #    |hdr|typ|pay len|  0|  1|  2|  3|  4|ftr
-    s = "\x7E\x06\x05\x00\x00\x00\x90\x00\x00\xE7"
+    s = "\x7E\x06\x05\x00\x00\x00\x00\x00\x00\xE7"
 
     # Drive loop
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620f10dee/w1_slave",
@@ -147,8 +147,12 @@ def check_temps(sc):
     s = with_ow_temp(cache, "/sys/bus/w1/devices/28-011620c718ee/w1_slave",
             checkpid, with_ow_temp_fk_id3, loop_hidefar, s, 7, "/home/pi/sc/data/hide-far-dmx.rrd", "dmx-hidefar")
 
-    print ("check temps fini: out=%r lhn=(%s) ltn=(%s)" % (s, loop_hidenear, loop_tanknear))
     assert(dmxdev.write(s) == len(s))
+
+    print ("check temps fini: out=%r" % s)
+    print ("PID: lhn=(%s)" % loop_hidenear)
+    print ("PID: ltn=(%s)" % loop_tanknear)
+    print ("PID: lhf=(%s)" % loop_hidefar)
 
 itime = time.time()
 s = sched.scheduler(time.time, time.sleep)
