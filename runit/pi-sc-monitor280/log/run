@@ -1,0 +1,4 @@
+#!/bin/sh
+mkdir -p /run/snakecontrol/monitor280.log
+chown -R pi:pi /run/snakecontrol/monitor280.log
+exec chpst -u pi svlogd -tt /run/snakecontrol/monitor280.log

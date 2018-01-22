@@ -2,14 +2,12 @@
 
 # Inspired by code found at http://wannabe.guru.org/scott/hobbies/temperature/
 
-import os
 import sched
 import time
 import serial
 import rrdtool
 
 import pidloop
-import BME280
 
 dmxdev = serial.Serial("/dev/serial/by-id/usb-DMXking.com_DMX_USB_PRO_6A0SVM7J-if00-port0", 57600);
 
@@ -37,8 +35,6 @@ loop_hidefar.setHardMin(-128)
 loop_hidefar.setKP(60.0)   # XXX These are un-tuned
 loop_hidefar.setKI(0.004)
 loop_hidefar.setKD(1000.0,0.95)
-
-bmemid = BME280.BME280(port=1, address=0x77)
 
 def log(devfn, temp, logname, rrd, kw="temp"):
     try:
@@ -89,15 +85,6 @@ def check_temps(sc):
     sc.enter(10, 1, check_temps, (sc,))
 
     cache = {}
-
-    # BME280 atop
-    try:
-      top = bmemid.get_data()
-      log("bme280-77", top['t'], "tank-mid", "/home/pi/sc/data/tank-mid-temp.rrd")
-      log("bme280-77", top['h'], "tank-mid", "/home/pi/sc/data/tank-mid-humid.rrd", kw="humid")
-      log("bme280-77", top['p'], "tank-mid", "/home/pi/sc/data/tank-mid-press.rrd", kw="press")
-    except Exception, e:
-      logfail("bme280-77", "hide-mid", e)
 
     # Log (and populate cache, while we're at it)
     with_ow_temp(cache,

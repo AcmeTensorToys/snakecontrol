@@ -5,6 +5,9 @@ package require lcdproclib
 spawn tail --retry --follow=name /run/snakecontrol/monitor.log/current
 set logsid ${spawn_id}
 
+spawn tail --retry --follow=name /run/snakecontrol/monitor280.log/current
+set log2sid ${spawn_id}
+
 spawn tail --retry --follow=name /run/snakecontrol/door-monitor.log/current
 set doorlogsid ${spawn_id}
 
@@ -94,8 +97,6 @@ while { true } {
         "hide-far temp=${datare}"    { drawtemp ${sid} 1 "v_rh"    3 4 [lindex ${m} 1] } \
         "tank-near temp=${datare}"   { drawtemp ${sid} 1 "v_lt"    9 2 [lindex ${m} 1] } \
         "tank-far temp=${datare}"    { drawtemp ${sid} 1 "v_rt"    9 4 [lindex ${m} 1] } \
-        "tank-mid temp=${datare}"    { drawtemp ${sid} 1 "v_mt"    3 3 [lindex ${m} 1] } \
-        "tank-mid humid=${datare}"   { drawtemp ${sid} 1 "v_mh"    9 3 [lindex ${m} 1] } \
         "dmx-tanknear dmx=${datare}" { drawdmx  ${sid} 1 "v_ldmx" 15 3 [lindex ${m} 1] } \
         "dmx-hidenear dmx=${datare}" { drawdmx  ${sid} 1 "v_hdmx" 16 3 [lindex ${m} 1] } \
 	"dmx-hidefar dmx=${datare}"  { drawdmx  ${sid} 1 "v_fdmx" 17 3 [lindex ${m} 1] } \
@@ -105,6 +106,15 @@ while { true } {
       set loopctr [expr (${loopctr} + 1) % 10]
     }
     -i ${logsid} -re "${dskip}\n" {}
+
+    -i ${log2sid} -re "${datapfx}(${dskip})\n" {
+      # This uses the many-argument form of switch to get expansion inside the
+      # templates.  That's a little gross, but so it goes.
+      switch -regexp -matchvar m -- "${expect_out(1,string)}" \
+        "tank-mid temp=${datare}"    { drawtemp ${sid} 1 "v_mt"    3 3 [lindex ${m} 1] } \
+        "tank-mid humid=${datare}"   { drawtemp ${sid} 1 "v_mh"    9 3 [lindex ${m} 1] } \
+    }
+    -i ${log2sid} -re "${dskip}\n" {}
 
     -i ${doorlogsid} -re "${datapfx}door${dskip} left=${datare} right=${datare}${dskip}\n" {
       switch -regexp "${expect_out(1,string)}${expect_out(2,string)}" {

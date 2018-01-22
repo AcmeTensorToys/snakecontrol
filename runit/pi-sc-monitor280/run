@@ -1,0 +1,2 @@
+#!/bin/sh
+exec chpst -u pi:pi:i2c python -u /home/pi/sc/bin/monitor280.py
