@@ -5,6 +5,7 @@ class PIDLoop(object):
 
     def __init__ (self) :
         self.kP = 0.0
+        self.kPover = None
         self.kI = 0.0
         self.kD = 0.0
         self.kDDecay = 0.0
@@ -25,6 +26,9 @@ class PIDLoop(object):
 
     def setKP (self, kP) :
         self.kP = kP
+
+    def setKPover (self, kPo) :
+        self.kPover = kPo
 
     def setKD (self, kD, kDDecay) :
         self.kD = kD
@@ -47,7 +51,11 @@ class PIDLoop(object):
 
         # print ("PID LOOP CONTRIBUTIONS: p=%r d=%r i=%r" % (self.kP * error, self.kD * edeltasmooth, self.kI * self.sum_error))
 
-        return (self.kP * error) + (self.kD * edeltasmooth) + (self.kI * self.sum_error)
+        pterm = self.kP * error
+        if (self.kPover is not None) and (error > 0) :
+            pterm = self.kPover * error
+
+        return pterm + (self.kD * edeltasmooth) + (self.kI * self.sum_error)
 
     def update (self, value, when) :
         if self.setpoint is None :
