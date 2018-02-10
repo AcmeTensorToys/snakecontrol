@@ -10,15 +10,12 @@ proc ::lcdproclib::cmd {sid cmd} {
          while { true } {
            expect {
              -i ${sid} -re "^success\[^\n\]*\n" { return }
-             -i ${sid} -re "^\r\n" { }
-             -i ${sid} -re "^listen\[^\n\]*\n" {}
-             -i ${sid} -re "^ignore\[^\n\]*\n" {}
+             -i ${sid} -re "\[^\n\]*\n" { }
              timeout { error "LCD protocol failure while waiting for success?" } 
            }
          }
        }
-      -i ${sid} -re "^listen\[^\n\]*\n" {}
-      -i ${sid} -re "^ignore\[^\n\]*\n" {}
+      -i ${sid} -re "\[^\n\]*\n" { }
       timeout { error "LCD protocol failure while waiting for echo?" } 
     }
   }
