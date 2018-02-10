@@ -1,3 +1,6 @@
 *.rrd
 .*.swp
+
 care.log
+
+pidmonitor.state

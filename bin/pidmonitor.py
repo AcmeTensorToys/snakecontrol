@@ -2,12 +2,15 @@
 
 # Inspired by code found at http://wannabe.guru.org/scott/hobbies/temperature/
 
+import ConfigParser
 import sched
 import time
 import serial
 import rrdtool
 
 import pidloop
+
+statefilename = "/home/pi/sc/data/pidmonitor.state"
 
 dmxdev = serial.Serial("/dev/serial/by-id/usb-DMXking.com_DMX_USB_PRO_6A0SVM7J-if00-port0", 57600);
 
@@ -18,7 +21,6 @@ loop_hidenear.setHardMin(-128)
 loop_hidenear.setKP(60.0)
 loop_hidenear.setKI(0.004)
 loop_hidenear.setKD(1000.0,0.95)
-loop_hidenear.sum_error = 7600.0 # XXX Initialize offset point a bit
 
 loop_tanknear = pidloop.PIDThresh(128,22,23,0,26,28,-128)
 loop_tanknear.setPoint(25)
@@ -35,6 +37,27 @@ loop_hidefar.setHardMin(-128)
 loop_hidefar.setKP(60.0)   # XXX These are un-tuned
 loop_hidefar.setKI(0.004)
 loop_hidefar.setKD(1000.0,0.95)
+
+try:
+    config = ConfigParser.ConfigParser()
+    config.read(statefilename)
+
+    try:
+        loop_hidenear.sum_error = config.getfloat("loop_hidenear", "sum_error")
+    except Exception as e:
+        pass
+
+    try:
+        loop_tanknear.sum_error = config.getfloat("loop_tanknear", "sum_error")
+    except Exception as e:
+        pass
+
+    try:
+        loop_hidefar.sum_error  = config.getfloat("loop_hidefar",  "sum_error")
+    except Exception as e:
+        pass
+except Exception as e:
+    pass
 
 def log(devfn, temp, logname, rrd, kw="temp"):
     try:
@@ -141,9 +164,26 @@ def check_temps(sc):
     print ("PID: ltn=(%s)" % loop_tanknear)
     print ("PID: lhf=(%s)" % loop_hidefar)
 
+
+def save_state(sc):
+    sc.enter(600, 2, save_state, (sc,))
+
+    config = ConfigParser.ConfigParser()
+    config.add_section("loop_tanknear")
+    config.set("loop_tanknear", "sum_error", loop_tanknear.sum_error)
+    config.add_section("loop_hidenear")
+    config.set("loop_hidenear", "sum_error", loop_hidenear.sum_error)
+    config.add_section("loop_hidefar")
+    config.set("loop_hidefar", "sum_error" , loop_hidefar.sum_error )
+
+    with open(statefilename, 'w') as statefile:
+        config.write(statefile)
+
 itime = time.time()
 s = sched.scheduler(time.time, time.sleep)
 s.enterabs(itime, 1, check_temps, (s,))
+
+s.enter(600, 2, save_state, (s,))
 
 print("Monitor starting...")
 s.run()
